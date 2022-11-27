@@ -1,0 +1,1 @@
+mongodb+srv://m001-student:m001-mongodb-basics@sandbox.6jiio2q.mongodb.net/game_library?retryWrites=true&w=majority
