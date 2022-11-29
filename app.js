@@ -1,3 +1,6 @@
+const dotenv = require('dotenv') // .env file
+dotenv.config() // using .env
+
 var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
@@ -12,7 +15,7 @@ var app = express();
 
 // Set up mongoose connection
 const mongoose = require("mongoose");
-const mongoDB = "mongodb+srv://m001-student:m001-mongodb-basics@sandbox.6jiio2q.mongodb.net/game_library?retryWrites=true&w=majority";
+const mongoDB = `mongodb+srv://${process.env.MONGODB_USER}:${process.env.MONGODB_PASS}@sandbox.6jiio2q.mongodb.net/${process.env.MONGODB_COLLECTION}?retryWrites=true&w=majority`;
 mongoose.connect(mongoDB, { useNewUrlParser: true, useUnifiedTopology: true });
 const db = mongoose.connection;
 db.on("error", console.error.bind(console, "MongoDB connection error:"));
