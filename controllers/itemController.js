@@ -1,8 +1,27 @@
-const item = require('../models/item');
+const Item = require('../models/item');
+const Category = require('../models/category');
+
+const async = require('async');
 
 // Display site home page
 exports.index = (req, res) => {
-    res.send("NOT IMPLEMENTED: Site Home Page");
+    async.parallel(
+      {
+        game_count(callback) {
+          Item.countDocuments({}, callback);
+        },
+        category_count(callback) {
+          Category.countDocuments({}, callback);
+        }
+      },
+      (err, results) => {
+        res.render("index", {
+          title: "GameLibrary Home",
+          error: err,
+          data: results,
+        })
+      }
+    );
 };
 
 // Display list of all items
