@@ -25,10 +25,10 @@ exports.index = (req, res) => {
 };
 
 // Display list of all items
-exports.item_list = function (req, res, next) {
+exports.item_list = (req, res, next) => {
     Item.find({}, "title")
       .sort({ title: 1 })
-      .exec(function (err, list_items) {
+      .exec((err, list_items) => {
         if (err) {
           return next(err);
         }
@@ -41,8 +41,22 @@ exports.item_list = function (req, res, next) {
 };
 
 // Display detail page for a specific item.
-exports.item_detail = (req, res) => {
-  res.send(`NOT IMPLEMENTED: Item detail: ${req.params.id}`);
+exports.item_detail = (req, res, next) => {
+    Item.findById(req.params.id)
+        .populate("category")
+        .exec((err, details) => {
+          if (err) {
+            return next(err);
+          }
+          // Successful, so render
+          res.render("item_detail", {
+            title: details.title,
+            category: details.category,
+            description: details.description,
+            price: details.price,
+            stock: details.stock
+          });
+        });
 };
 
 // Display item create form on GET.
