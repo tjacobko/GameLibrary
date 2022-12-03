@@ -2,6 +2,7 @@ const Item = require('../models/item');
 const Category = require('../models/category');
 
 const async = require('async');
+const { body, validationResult } = require("express-validator");
 
 // Display site home page
 exports.index = (req, res) => {
@@ -60,14 +61,75 @@ exports.item_detail = (req, res, next) => {
 };
 
 // Display item create form on GET.
-exports.item_create_get = (req, res) => {
-  res.send("NOT IMPLEMENTED: item create GET");
+exports.item_create_get = (req, res, next) => {
+  // Get all categories, which we can use for adding to our book.
+  Category.find({}, (err, categories) => {
+    if (err) {
+      return next(err);
+    }
+    res.render("item_form", {
+      form_title: "Create Game",
+      categories: categories
+    });
+  });
 };
 
 // Handle item create on POST.
-exports.item_create_post = (req, res) => {
-  res.send("NOT IMPLEMENTED: item create POST");
-};
+exports.item_create_post = [
+  // Validate and sanitize fields.
+  body("title", "Title must not be empty.")
+    .trim()
+    .isLength({ min: 1 })
+    .escape(),
+  body("description", "Description must not be empty.")
+    .trim()
+    .isLength({ min: 1 })
+    .escape(),
+  body("category", "Category must not be empty")
+    .trim()
+    .isLength({ min: 1 })
+    .escape(),
+  body("price", "Price must not be empty")
+    .trim()
+    .isLength({ min: 1 })
+    .escape(),
+  body("stock", "Stock must not be empty")
+    .trim()
+    .isLength({ min: 1 })
+    .escape(),
+  // Process request after validation and sanitization.
+  (req, res, next) => {
+    // Extract the validation errors from a request.
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      // There are errors. Render form again with sanitized values/errors messages.
+      res.render("item_form", {
+        title: "Create Game",
+        categories: req.body,
+        errors: errors.array(),
+      });
+      return;
+    }
+    // Data from form is valid.
+
+    // Create an Item object with escaped and trimmed data.
+    const game = new Item({
+      title: req.body.title,
+      description: req.body.description,
+      category: req.body.category,
+      price: req.body.price,
+      stock: req.body.stock
+    });
+    game.save((err) => {
+      if (err) {
+        return next(err);
+      }
+      // Successful - redirect to new item record.
+      res.redirect(game.url);
+    });
+  }
+];
 
 // Display item delete form on GET.
 exports.item_delete_get = (req, res) => {
