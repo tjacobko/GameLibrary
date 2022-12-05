@@ -55,7 +55,8 @@ exports.item_detail = (req, res, next) => {
             category: details.category,
             description: details.description,
             price: details.price,
-            stock: details.stock
+            stock: details.stock,
+            details: details
           });
         });
 };
@@ -132,13 +133,35 @@ exports.item_create_post = [
 ];
 
 // Display item delete form on GET.
-exports.item_delete_get = (req, res) => {
-  res.send("NOT IMPLEMENTED: item delete GET");
+exports.item_delete_get = (req, res, next) => {
+  Item.findById(req.params.id)
+    .populate("category")
+    .exec((err, game) => {
+      if (err) {
+        return next(err);
+      }
+      if (game == null) {
+        // No results.
+        const err = new Error("Game not found");
+        err.status = 404;
+        return next(err);
+      }
+      // Successful, so render
+      res.render("item_delete", {
+        game
+      });
+    });
 };
 
 // Handle item delete on POST.
-exports.item_delete_post = (req, res) => {
-  res.send("NOT IMPLEMENTED: item delete POST");
+exports.item_delete_post = (req, res, next) => {
+  Item.findByIdAndRemove(req.body.gameid, (err) => {
+    if (err) {
+      return next(err);
+    }
+    // Success - go to Item List
+    res.redirect("/catalog/item");
+  });
 };
 
 // Display item update form on GET.
