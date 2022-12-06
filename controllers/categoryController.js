@@ -47,7 +47,8 @@ exports.category_detail = (req, res, next) => {
             res.render("category_detail", {
                 title: results.category.name,
                 description: results.category.description,
-                games: results.games
+                games: results.games,
+                category: results.category
             });
         }
     );
@@ -102,13 +103,69 @@ exports.category_create_post = [
 ];
 
 // Display Category delete form on GET.
-exports.category_delete_get = (req, res) => {
-    res.send("NOT IMPLEMENTED: Category delete GET");
+exports.category_delete_get = (req, res, next) => {
+    async.parallel(
+        {
+            category(callback) {
+                Category.findById(req.params.id).exec(callback);
+            },
+            item(callback) {
+                Item.find({ category : req.params.id }).exec(callback);
+            }
+        },
+        (err, results) => {
+            if (err) {
+                return next(err);
+            }
+            if (results.category == null) {
+                // No results.
+                res.redirect("/catalog/category");
+            }
+            // Successful, so render.
+            res.render("category_delete", {
+                title: "Delete Category",
+                category: results.category,
+                items: results.item
+            });
+        }
+    );
 };
 
 // Handle Category delete on POST.
-exports.category_delete_post = (req, res) => {
-    res.send("NOT IMPLEMENTED: Category delete POST");
+exports.category_delete_post = (req, res, next) => {
+    async.parallel(
+        {
+            category(callback) {
+                Category.findById(req.body.categoryid).exec(callback);
+            },
+            items(callback) {
+                Item.find({ category : req.body.categoryid }).exec(callback);
+            }
+        },
+        (err, results) => {
+            if (err) {
+                return next(err);
+            }
+            // Success
+            if (results.items.length > 0) {
+                // Category has items. Render in same way as for GET route.
+                res.render("category_delete", {
+                    title: "Delete Category",
+                    category: results.category,
+                    items: results.items
+                });
+                return;
+            }
+            // Category has no items. Delete object and redirect to the list of categories.
+            Category.findByIdAndRemove(req.body.categoryid, (err) => {
+                if (err) {
+                    return next(err)
+                }
+                // Success - go to category list
+                res.redirect("/catalog/category");
+            });
+        }
+    );
 };
 
 // Display Category update form on GET.
