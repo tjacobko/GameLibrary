@@ -165,11 +165,103 @@ exports.item_delete_post = (req, res, next) => {
 };
 
 // Display item update form on GET.
-exports.item_update_get = (req, res) => {
-  res.send("NOT IMPLEMENTED: item update GET");
+exports.item_update_get = (req, res, next) => {
+  // Get items for form
+  async.parallel(
+    {
+      item(callback) {
+        Item.findById(req.params.id).exec(callback);
+      },
+      category(callback) {
+        Category.find(callback);
+      }
+    },
+    (err, results) => {
+      if (err) {
+        return next(err);
+      }
+      if (results.item == null) {
+        // No results.
+        const err = new Error("Game not found");
+        err.status = 404;
+        return next(err);
+      }
+      // Success, so render.
+      res.render("item_form", {
+        form_title: "Update Game",
+        item: results.item,
+        categories: results.category
+      });
+    }
+  );
 };
 
 // Handle item update on POST.
-exports.item_update_post = (req, res) => {
-  res.send("NOT IMPLEMENTED: item update POST");
-};
+exports.item_update_post = [
+  // Validate and sanitize fields.
+  body("title", "Title must not be empty.")
+    .trim()
+    .isLength({ min: 1 })
+    .escape(),
+  body("description", "Description must not be empty.")
+    .trim()
+    .isLength({ min: 1 })
+    .escape(),
+  body("category", "Category must not be empty")
+    .trim()
+    .isLength({ min: 1 })
+    .escape(),
+  body("price", "Price must not be empty")
+    .trim()
+    .isLength({ min: 1 })
+    .escape(),
+  body("stock", "Stock must not be empty")
+    .trim()
+    .isLength({ min: 1 })
+    .escape(),
+  
+  // Process request after validation and sanitization.
+  (req, res, next) => {
+    // Extract the validation errors from a request.
+    const errors = validationResult(req);
+
+    // Create an Item object with escaped/trimmed data and old id.
+    const game = new Item({
+      title: req.body.title,
+      description: req.body.description,
+      category: req.body.category,
+      price: req.body.price,
+      stock: req.body.stock,
+      _id: req.params.id
+    });
+
+    if (!errors.isEmpty()) {
+      // Therre are errors. Render form again with sanitized values/error messages.
+
+      // Get categories for the form
+      Category.find({}).exec((err, categories) => {
+        if (err) {
+          return next(err);
+        }
+        // Successful, so render.
+        res.render("item_form", {
+          title: "Update Game",
+          item: game,
+          categories: categories,
+          errors: errors.array(),
+        });
+      });
+      return;
+    }
+
+    // Data from form is valid. Update the record.
+    Item.findByIdAndUpdate(req.params.id, game, {}, (err, thegame) => {
+      if (err) {
+        return next(err);
+      }
+
+      // Successful: redirect to the item detail page.
+      res.redirect(thegame.url);
+    });
+  }
+];
